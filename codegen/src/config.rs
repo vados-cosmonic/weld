@@ -118,6 +118,8 @@ pub enum ModelSource {
     Path {
         path: PathBuf,
         #[serde(default)]
+        base_dir: Option<PathBuf>,
+        #[serde(default)]
         files: Vec<String>,
     },
 }
@@ -137,7 +139,7 @@ impl FromStr for ModelSource {
                 files: Vec::default(),
             }
         } else {
-            ModelSource::Path { path: s.into(), files: Vec::default() }
+            ModelSource::Path { path: s.into(), files: Vec::default(), base_dir: None }
         })
     }
 }
@@ -145,7 +147,7 @@ impl FromStr for ModelSource {
 impl ModelSource {
     /// convenience function to create a ModelSource for a single file path
     pub fn from_file<P: Into<std::path::PathBuf>>(path: P) -> ModelSource {
-        ModelSource::Path { path: path.into(), files: Vec::default() }
+        ModelSource::Path { path: path.into(), files: Vec::default(), base_dir: None }
     }
 }
 
@@ -155,8 +157,8 @@ impl fmt::Display for ModelSource {
             f,
             "{}",
             match self {
-                ModelSource::Url { url, files: _ } => format!("url({url})"),
-                ModelSource::Path { path, files: _ } => format!("path({})", path.display()),
+                ModelSource::Url { url, .. } => format!("url({url})"),
+                ModelSource::Path { path, .. } => format!("path({})", path.display()),
             }
         )
     }

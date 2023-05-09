@@ -55,7 +55,7 @@ pub fn sources_to_model(sources: &[ModelSource], base_dir: &Path, verbose: bool)
 #[doc(hidden)]
 pub(crate) fn sources_to_paths(
     sources: &[ModelSource],
-    base_dir: &Path,
+    default_base_dir: &Path,
     debug: bool,
 ) -> Result<Vec<PathBuf>> {
     let mut results = Vec::new();
@@ -63,17 +63,20 @@ pub(crate) fn sources_to_paths(
 
     for source in sources.iter() {
         match source {
-            ModelSource::Path { path, files } => {
+            ModelSource::Path { path, files, base_dir } => {
+
+                let base = base_dir.clone().unwrap_or(default_base_dir.into());
+                
                 let prefix = if path.is_absolute() {
                     path.to_path_buf()
                 } else {
-                    base_dir.join(path)
+                    base.join(path)
                 };
                 if files.is_empty() {
                     // If path is a file, it will be added; if a directory, and source.files is empty,
                     // the directory will be traversed to find model files
                     if debug {
-                        println!("DEBUG: adding path: {}", &prefix.display());
+                        println!("DEBUG: adding path: {}",&prefix.display());
                     }                    results.push(prefix)
                 } else {
                     for file in files.iter() {

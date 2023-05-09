@@ -26,7 +26,7 @@ const MODEL_MODEL: &str = "core/wasmcloud-model.smithy";
 /// The first parameter of the `smithy_bindgen!` macro can take one of three forms.
 /// The second parameter is the namespace used for code generation.
 ///
-/// - one wasmcloud first-party interface  
+/// - one wasmcloud first-party interface
 ///
 ///   The single-file parameter is a path relative to the wasmcloud interfaces git repo `wasmcloud/interfaces`
 ///
@@ -157,6 +157,7 @@ struct SmithySource {
     url: Option<String>,
     path: Option<String>,
     files: Vec<String>,
+    base_dir: Option<String>,
 }
 
 /// internal struct used by smithy-bindgen
@@ -170,7 +171,7 @@ impl From<SmithySource> for ModelSource {
     fn from(source: SmithySource) -> Self {
         match (source.url, source.path) {
             (Some(url), _) => ModelSource::Url { url, files: source.files },
-            (_, Some(path)) => ModelSource::Path { path: path.into(), files: source.files },
+            (_, Some(path)) => ModelSource::Path { path: path.into(), files: source.files, base_dir: source.base_dir.map(PathBuf::from) },
             _ => unreachable!(),
         }
     }
@@ -180,12 +181,14 @@ mod kw {
     syn::custom_keyword!(url);
     syn::custom_keyword!(path);
     syn::custom_keyword!(files);
+    syn::custom_keyword!(base_dir);
 }
 
 enum Opt {
     Url(String),
     Path(String),
     Files(Vec<String>),
+    BaseDir(String),
 }
 
 impl Parse for Opt {
@@ -199,6 +202,10 @@ impl Parse for Opt {
             input.parse::<kw::path>()?;
             input.parse::<Token![:]>()?;
             Ok(Opt::Path(input.parse::<LitStr>()?.value()))
+        } else if l.peek(kw::base_dir) {
+            input.parse::<kw::path>()?;
+            input.parse::<Token![:]>()?;
+            Ok(Opt::BaseDir(input.parse::<LitStr>()?.value()))
         } else if l.peek(kw::files) {
             input.parse::<kw::files>()?;
             input.parse::<Token![:]>()?;
@@ -242,6 +249,12 @@ impl Parse for SmithySource {
                     }
                     source.path = Some(s)
                 }
+                Opt::BaseDir(s) => {
+                    if source.base_dir.is_some() {
+                        return Err(Error::new(s.span(), "cannot specify second path"));
+                    }
+                    source.base_dir = Some(s)
+                }
                 Opt::Files(val) => source.files = val,
             }
         }
@@ -284,6 +297,7 @@ impl Parse for BindgenConfig {
             sources = vec![SmithySource {
                 url: Some(BASE_MODEL_URL.into()),
                 path: None,
+                base_dir: None,
                 files: vec![
                     "core/wasmcloud-core.smithy".into(),
                     "core/wasmcloud-model.smithy".into(),
@@ -318,6 +332,7 @@ impl Parse for BindgenConfig {
                     _ => unreachable!(),
                 },
                 path: None,
+                base_dir: None,
             });
         }
         Ok(BindgenConfig { sources, namespace })
