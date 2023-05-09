@@ -28,7 +28,7 @@ const SMITHY_CACHE_NO_EXPIRE: &str = "NO_EXPIRE";
 /// (Relative paths in codegen.toml are relative to the file codegen.toml, not
 /// necessarily the current directory of the OS process)
 /// Returns single merged model.
-pub fn sources_to_model(sources: &[ModelSource], base_dir: &Path, verbose: u8) -> Result<Model> {
+pub fn sources_to_model(sources: &[ModelSource], base_dir: &Path, verbose: bool) -> Result<Model> {
     let paths = sources_to_paths(sources, base_dir, verbose)?;
     let mut assembler = atelier_assembler::ModelAssembler::default();
     for path in paths.iter() {
@@ -56,7 +56,7 @@ pub fn sources_to_model(sources: &[ModelSource], base_dir: &Path, verbose: u8) -
 pub(crate) fn sources_to_paths(
     sources: &[ModelSource],
     base_dir: &Path,
-    verbose: u8,
+    debug: bool,
 ) -> Result<Vec<PathBuf>> {
     let mut results = Vec::new();
     let mut urls = Vec::new();
@@ -72,14 +72,13 @@ pub(crate) fn sources_to_paths(
                 if files.is_empty() {
                     // If path is a file, it will be added; if a directory, and source.files is empty,
                     // the directory will be traversed to find model files
-                    if verbose > 0 {
+                    if debug {
                         println!("DEBUG: adding path: {}", &prefix.display());
-                    }
-                    results.push(prefix)
+                    }                    results.push(prefix)
                 } else {
                     for file in files.iter() {
                         let path = prefix.join(file);
-                        if verbose > 0 {
+                        if debug {
                             println!("DEBUG: adding path: {}", &path.display());
                         }
                         results.push(path);
@@ -88,7 +87,7 @@ pub(crate) fn sources_to_paths(
             }
             ModelSource::Url { url, files } => {
                 if files.is_empty() {
-                    if verbose > 0 {
+                    if debug {
                         println!("DEBUG: adding url: {url}");
                     }
                     urls.push(url.to_string());
@@ -100,7 +99,7 @@ pub(crate) fn sources_to_paths(
                             if !url.ends_with('/') && !file.starts_with('/') { "/" } else { "" },
                             file
                         );
-                        if verbose > 0 {
+                        if debug {
                             println!("DEBUG: adding url: {}", &url);
                         }
                         urls.push(url);

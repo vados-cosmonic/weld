@@ -121,7 +121,7 @@ fn generate_source(bindgen: BindgenConfig) -> Result<proc_macro2::TokenStream> {
         .map(SmithySource::into)
         .collect::<Vec<ModelSource>>();
     let mut w = Writer::default();
-    let model = sources_to_model(&sources, &PathBuf::new(), 0).map_err(|e| {
+    let model = sources_to_model(&sources, &PathBuf::new(), std::env::var("SMITHY_BINDGEN_DEBUG").is_ok()).map_err(|e| {
         Error::new(
             call_site.span(),
             format!("cannot compile model sources: {}", e),

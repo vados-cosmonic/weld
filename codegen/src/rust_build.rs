@@ -48,7 +48,7 @@ pub fn rust_build_into<CFG: Into<PathBuf>, OUT: Into<PathBuf>>(
     // tell cargo to rebuild if codegen.toml changes
     println!("cargo:rerun-if-changed={}", &config_path.display());
 
-    let model = crate::sources_to_model(&config.models, &config.base_dir, 0)?;
+    let model = crate::sources_to_model(&config.models, &config.base_dir, std::env::var("SMITHY_BINDGEN_DEBUG").is_ok())?;
 
     if let Err(msgs) = crate::validate::validate(&model) {
         return Err(Box::new(Error::Build(msgs.join("\n"))));
@@ -56,7 +56,7 @@ pub fn rust_build_into<CFG: Into<PathBuf>, OUT: Into<PathBuf>>(
 
     // the second time we do this it should be faster since no downloading is required,
     // and we also don't invoke assembler to traverse directories
-    for path in crate::sources_to_paths(&config.models, &config.base_dir, 0)?.into_iter() {
+    for path in crate::sources_to_paths(&config.models, &config.base_dir, std::env::var("SMITHY_BINDGEN_DEBUG").is_ok())?.into_iter() {
         // rerun-if-changed works on directories and files, so it's ok that sources_to_paths
         // may include folders that haven't been traversed by the assembler.
         // Using a folder depends on the OS updating folder mtime if the folder contents change.
